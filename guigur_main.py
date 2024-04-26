@@ -29,29 +29,29 @@ def main_app(shared_data):
 
 	d.set_channel(1) #select the channel 1 to do the setup on this specific channel
 	d.enable_channel() #enable the channel (turn the green light for the channel)
-	d.set_max_voltage(0) #set the minimum voltage available (min in 0)
+	d.set_min_voltage(0) #set the minimum voltage available (min in 0)
 	d.set_max_voltage(20) #set the maximum voltage available (max is 20.05)
-	
+	#d.set_min_current(0) #set the minimum current available (min in 0)
+	d.set_max_current(3.01) #set the maximum current available (max is 6.01a bellow 6v and 3.01a from that point)
+	d.set_current(3)
+
 	d.set_channel(2)
 	d.enable_channel()
 	d.set_max_voltage(0)
+	d.set_max_voltage(20) 
+	#d.set_min_current(0)
+	d.set_max_current(3.01)
+	d.set_current(3)
 
 	step_volt = 1 #in v
 	start_volt = 0
 	stop_volt = 20
 
-	for x in range(start_volt, stop_volt + step_volt, step_volt):
-		d.disable_output()
-		time.sleep(0.1)
-	
+	for x in range(start_volt, stop_volt + step_volt, step_volt):	
 		d.set_channel(1)
 		d.set_voltage(x/2)
 		d.set_channel(2)
 		d.set_voltage(x/2)
-
-
-		time.sleep(0.1)
-		d.enable_output() #enable the outut (the blue light)
 		time.sleep(1)
 	
 	d.disable_output()

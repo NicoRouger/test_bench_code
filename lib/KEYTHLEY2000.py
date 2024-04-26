@@ -85,6 +85,6 @@ class KEYTHLEY2000(DMM):
     def getTemp(self):
         temp = self.ress.query("MEAS:TEMP?") #query ?
 
-        print(temp)
+        # print(temp)
         return temp
                 
