@@ -7,7 +7,7 @@ class Instrument:
 		self.rm = rm
 		self.instr = instr
 		self.ress = self.rm.open_resource(self.instr)
-		print("DMM")
+		# print("Instrument")
 
 	def check(self, role, name, port):
 		rep = self.ress.query("*IDN?")
