@@ -12,7 +12,7 @@ import sys
 import threading
 
 def main_app(shared_data):
-	rm = pyvisa.ResourceManager('@py')
+	rm = pyvisa.ResourceManager()
 	# d = KEYTHLEY2000(rm, 'ASRL/dev/cu.usbserial-2110::INSTR')
 	# d.check(role="temp1", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1308393,A20  /A02', port="A")
 
@@ -24,7 +24,7 @@ def main_app(shared_data):
 	# print(d.measureVoltage())
 	# print(d.measureCurrent())
 	print(rm.list_resources())
-	d = NGL202(rm, 'ASRL/dev/cu.usbmodem21201::INSTR')
+	d = NGL202(rm, 'ASRL8::INSTR')
 	d.check(role="PSU", name="Rohde&Schwarz,NGL202,3638.3376k03/105048,04.000 002CBB20D8F", port="1")
 
 	d.set_channel(1) #select the channel 1 to do the setup on this specific channel
