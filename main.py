@@ -13,9 +13,70 @@ from owntech import find_devices
 
 import sys
 import threading
-
+import matplotlib.pyplot as plt
 import serial
 
+SCOPE_ADDRESS = 'USB0::0x0699::0x0522::C062816::INSTR'
+
+
+def config_scope(scope):
+	# print('Scope ID: {}\n'.format(scope.query('*IDN?'))
+	scope.write('*CLS')     # clear the queue
+	scope.write('CLEAR')
+	scope.write('MEASUrement:DELETEALL')            # Delete all measurements
+	scope.write('DISplay:WAVEView1:CH1:STATE ON')   # Enable Ch1
+	scope.write('CH1:SCAle 0.5')                    # Set ch1 vertical scale to 0.5V/div
+	scope.write('CH1:POSition -3.2')                # Set ch1 vertical position to -3.2 div
+	scope.write('HORizontal:SCAle 2e-4')            # Set horizontal scale to 200ns/div
+	scope.write('HORizontal:POSition 10')           # Time ref at 10% of the screen
+	scope.write('TRIGger:A:EDGE:SOUrce CH1')        # Trigger on ch1
+	scope.write('TRIGger:A:LEVel:CH1 0.5')          # Set trigger level at 1V on ch1
+	scope.write('TRIGger:A:EDGE:SLOpe RISe')        # Trigger on rising edge
+	scope.write('TRIGger:A:EDGE:COUPling NOISErej') # Noise reject coupling mode
+	scope.write('TRIGger:A:MODe AUTO')              # Trigger mode auto
+	scope.write('DATa:SOUrce CH1')                  # Set ch1 as data source
+	scope.write('DATa:ENCdg ASCii')                 # Set data ASCII encoding
+	scope.write('WFMOutpre:ENCdg ASCii')            # Preamble encoded in ASCII
+	scope.write('WFMOutpre:BYT_Nr 2')               # 2 bytes per sample
+	# scope.query('*OPC?')
+	# print(scope.query('WFMOutpre?'))                # Print waveform preamble
+
+def get_scope_data(scope):
+	ymult = float(scope.query('WFMOutpre:YMUlt?').strip('\n'))
+	yzero = float(scope.query('WFMOutpre:YZEro?').strip('\n'))
+	xincr = float(scope.query('WFMOutpre:XINcr?').strip('\n'))
+	ptoff = int(scope.query('WFMOutpre:PT_Off?').strip('\n'))
+	xoff = ptoff*xincr
+
+	xunit = scope.query('WFMOutpre:XUNit?').strip('\"\n')
+	yunit = scope.query('WFMOutpre:YUNit?').strip('\"\n')
+
+	wfid = scope.query('WFMOutpre:WFId?').strip('\"\n')
+	print(wfid)
+
+	wfm_str = scope.query("CURVe?")
+	frames = wfm_str.splitlines()[0].split(";")
+
+	print(f'YMULT? : {ymult}')
+	print(f'YZERO? : {yzero}')
+	print(f'XINCR? : {xincr}')
+	print(f'PTOFF? : {ptoff}')
+	print(f'XUNIT? : {xunit}')
+	print(f'YUNIT? : {yunit}')
+
+	data = [int(b)*ymult+yzero for b in frames[0].split(",")]
+	time = [i*xincr-xoff for i in range(len(data))]
+
+	return time, data, wfid, yunit
+
+def plot_scope_data(scope_time, data, wfid, yunit):
+	plt.plot(scope_time, data, label=wfid)
+	plt.xlabel("Time (s)")
+	plt.ylabel(f"{wfid.split(',')[0]} ({yunit})")
+	plt.grid()
+	plt.legend()
+	plt.show()
+ 
 def twist_init():
 	twist_vid = 0x2fe3
 	twist_pid = 0x0100
@@ -41,8 +102,8 @@ def twist_init():
 	print("Twist init OK")
 	return Twist
 
-def resource_init():
-	rm = pyvisa.ResourceManager()
+def measure_devices_init(rm):
+	
 	# Get measurement devices
 	digit_voltage = KEYTHLEY2000(rm, 'GPIB0::3::INSTR')
 	digit_current = KEYTHLEY2000(rm, 'GPIB0::1::INSTR')
@@ -58,7 +119,7 @@ def resource_init():
 	print("init measurement devices OK")
 	return digit_voltage, digit_current, digit_temp1, digit_temp2
 
-def supply_init():
+def supply_init(rm):
 	rm = pyvisa.ResourceManager()
 	print(rm.list_resources())
 	supply = NGL202(rm, 'ASRL8::INSTR')
@@ -84,11 +145,33 @@ def supply_init():
 	return supply
 
 def main_app(shared_data):
-	digit_voltage, digit_current, digit_temp1, digit_temp2 = resource_init()
-	supply = supply_init()
+	rm = pyvisa.ResourceManager()
+	digit_voltage, digit_current, digit_temp1, digit_temp2 = measure_devices_init(rm)
+	supply = supply_init(rm)
+	scope = rm.open_resource(SCOPE_ADDRESS)
+	scope_time, data, wfid, yunit = get_scope_data(scope)
+
+	plot_scope_data(scope_time, data, wfid, yunit)
 
 	# Dictionnary to store results
 	res = {'Voltage':[], 'Current':[], 'Temp1':[], 'Temp2':[]}
+
+	# Drive duty cycle and phase shift
+	Twist = twist_init()
+
+	# while True:
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("DUTY", "LEG1", 0.55)
+	# 	print(message)
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("DUTY", "LEG1", 0.5)
+	# 	print(message)
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 10)
+	# 	print(message)
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 0)
+	# 	print(message)
 
 	# Config supply ramp
 	step_volt = 1 #in v
@@ -108,35 +191,9 @@ def main_app(shared_data):
 
 	df = pd.DataFrame(res)
 	df.to_csv('res_2024.csv', index=False)
-		
-	# rm = pyvisa.ResourceManager('@py')
-	# d = KEYTHLEY2000(rm, 'ASRL/dev/cu.usbserial-2110::INSTR')
-	# d.check(role="temp1", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1308393,A20  /A02', port="A")
-
 	
-	Twist = twist_init()
-
-	# while True:
-	# 	time.sleep(10)
-	# 	message = Twist.sendCommand("DUTY", "LEG1", 0.55)
-	# 	print(message)
-	# 	time.sleep(10)
-	# 	message = Twist.sendCommand("DUTY", "LEG1", 0.5)
-	# 	print(message)
-	# 	time.sleep(10)
-	# 	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 10)
-	# 	print(message)
-	# 	time.sleep(10)
-	# 	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 0)
-	# 	print(message)
-
-	# d.displayText("OwnTech")
-	# d.animateText("OwnTech")
-
-	# d.configTemp(rjunc=26)
-	# d.getTemp()
-	# print(d.measureVoltage())
-	# print(d.measureCurrent())
+	scope.close()
+	rm.close()
 
 if __name__ == "__main__":
 	shared_data = Queue()
