@@ -5,8 +5,8 @@ import time
 
 from lib.KEYTHLEY2000 import KEYTHLEY2000
 
-from communication_protocol_library.src.Twist_Class import Twist_Device
-from communication_protocol_library.src import find_devices
+from owntech.Twist_Class import Twist_Device
+from owntech import find_devices
 
 import sys
 import threading
@@ -28,7 +28,6 @@ def main_app(shared_data):
 
 	Twist = Twist_Device(twist_port= Twist_ports[0])
 
-
 	message = Twist.sendCommand("IDLE")
 	print(message)
 
@@ -47,6 +46,11 @@ def main_app(shared_data):
 	message = Twist.sendCommand("DEAD_TIME_FALLING", "LEG1", 100)
 	print(message)
 
+	message = Twist.sendCommand("DEAD_TIME_RISING", "LEG2", 300)
+	print(message)
+	message = Twist.sendCommand("DEAD_TIME_FALLING", "LEG2", 100)
+	print(message)
+
 	message = Twist.sendCommand("POWER_ON")
 	print(message)
 
@@ -55,7 +59,24 @@ def main_app(shared_data):
 	message = Twist.sendCommand("DUTY", "LEG2", 0.5)
 	print(message)
 
-	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 180)
+	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 0)
+	print(message)
+
+
+	while True:
+
+		time.sleep(10)
+		message = Twist.sendCommand("DUTY", "LEG1", 0.55)
+		print(message)
+		time.sleep(10)
+		message = Twist.sendCommand("DUTY", "LEG1", 0.5)
+		print(message)
+		time.sleep(10)
+		message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 10)
+		print(message)
+		time.sleep(10)
+		message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 0)
+		print(message)
 
 	# d.displayText("OwnTech")
 	# d.animateText("OwnTech")
