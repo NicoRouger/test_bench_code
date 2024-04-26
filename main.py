@@ -107,7 +107,7 @@ def main_app(shared_data):
 		time.sleep(1)
 
 	df = pd.DataFrame(res)
-	df.to_csv('res_2024.csv')
+	df.to_csv('res_2024.csv', index=False)
 		
 	# rm = pyvisa.ResourceManager('@py')
 	# d = KEYTHLEY2000(rm, 'ASRL/dev/cu.usbserial-2110::INSTR')
