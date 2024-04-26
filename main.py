@@ -43,18 +43,25 @@ def twist_init():
 
 def resource_init():
 	rm = pyvisa.ResourceManager()
-	print('resources :' , rm.list_resources())
-	# Get supply and measurement devices
+	# Get measurement devices
 	digit_voltage = KEYTHLEY2000(rm, 'GPIB0::3::INSTR')
 	digit_current = KEYTHLEY2000(rm, 'GPIB0::1::INSTR')
 	digit_temp1 = KEYTHLEY2000(rm, 'GPIB0::2::INSTR')
 	digit_temp2 = KEYTHLEY2000(rm, 'GPIB0::4::INSTR')
-	supply = NGL202(rm, 'ASRL8::INSTR')
 	# Check
 	digit_voltage.check(role="voltage_high", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1053308,A19  /A02', port="A")
 	digit_current.check(role="current_high", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,0972521,A17  /A02', port="A")
 	digit_temp1.check(role="temp1", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1102655,A19  /A02', port="A")
 	digit_temp2.check(role="temp2", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1308393,A20  /A02', port="A")
+	digit_temp1.configTemp(rjunc=26)
+	digit_temp2.configTemp(rjunc=26)
+	print("init measurement devices OK")
+	return digit_voltage, digit_current, digit_temp1, digit_temp2
+
+def supply_init():
+	rm = pyvisa.ResourceManager()
+	print(rm.list_resources())
+	supply = NGL202(rm, 'ASRL8::INSTR')
 	supply.check(role="PSU", name="Rohde&Schwarz,NGL202,3638.3376k03/105048,04.000 002CBB20D8F", port="1")
 
 	# Config DC supply
@@ -73,21 +80,20 @@ def resource_init():
 	#supply.set_min_current(0)
 	supply.set_max_current(3.01)
 	supply.set_current(3)
-
-	step_volt = 1 #in v
-	start_volt = 0
-	stop_volt = 4
-
-	digit_temp1.configTemp(rjunc=26)
-	digit_temp2.configTemp(rjunc=26)
-
-	return digit_voltage, digit_current, digit_temp1, digit_temp2
-
+	print("init supply OK")
+	return supply
 
 def main_app(shared_data):
 	digit_voltage, digit_current, digit_temp1, digit_temp2 = resource_init()
+	supply = supply_init()
 
+	# Dictionnary to store results
 	res = {'Voltage':[], 'Current':[], 'Temp1':[], 'Temp2':[]}
+
+	# Config supply ramp
+	step_volt = 1 #in v
+	start_volt = 0
+	stop_volt = 4
 
 	for x in range(start_volt, stop_volt + step_volt, step_volt):
 		supply.set_channel(1)
@@ -110,19 +116,19 @@ def main_app(shared_data):
 	
 	Twist = twist_init()
 
-	while True:
-		time.sleep(10)
-		message = Twist.sendCommand("DUTY", "LEG1", 0.55)
-		print(message)
-		time.sleep(10)
-		message = Twist.sendCommand("DUTY", "LEG1", 0.5)
-		print(message)
-		time.sleep(10)
-		message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 10)
-		print(message)
-		time.sleep(10)
-		message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 0)
-		print(message)
+	# while True:
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("DUTY", "LEG1", 0.55)
+	# 	print(message)
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("DUTY", "LEG1", 0.5)
+	# 	print(message)
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 10)
+	# 	print(message)
+	# 	time.sleep(10)
+	# 	message = Twist.sendCommand("PHASE_SHIFT", "LEG2", 0)
+	# 	print(message)
 
 	# d.displayText("OwnTech")
 	# d.animateText("OwnTech")
