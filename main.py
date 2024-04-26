@@ -3,8 +3,10 @@ import threading
 from queue import Queue
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from lib.KEYTHLEY2000 import KEYTHLEY2000
+from lib.NGL202 import NGL202
 
 from owntech.Twist_Class import Twist_Device
 from owntech import find_devices
@@ -42,15 +44,39 @@ def twist_init():
 def resource_init():
 	rm = pyvisa.ResourceManager()
 	print('resources :' , rm.list_resources())
+	# Get supply and measurement devices
 	digit_voltage = KEYTHLEY2000(rm, 'GPIB0::3::INSTR')
 	digit_current = KEYTHLEY2000(rm, 'GPIB0::1::INSTR')
 	digit_temp1 = KEYTHLEY2000(rm, 'GPIB0::2::INSTR')
 	digit_temp2 = KEYTHLEY2000(rm, 'GPIB0::4::INSTR')
-	print(digit_temp2.ress.query("*IDN?"))
+	supply = NGL202(rm, 'ASRL8::INSTR')
+	# Check
 	digit_voltage.check(role="voltage_high", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1053308,A19  /A02', port="A")
 	digit_current.check(role="current_high", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,0972521,A17  /A02', port="A")
 	digit_temp1.check(role="temp1", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1102655,A19  /A02', port="A")
 	digit_temp2.check(role="temp2", name='KEITHLEY INSTRUMENTS INC.,MODEL 2000,1308393,A20  /A02', port="A")
+	supply.check(role="PSU", name="Rohde&Schwarz,NGL202,3638.3376k03/105048,04.000 002CBB20D8F", port="1")
+
+	# Config DC supply
+	supply.set_channel(1) #select the channel 1 to do the setup on this specific channel
+	supply.enable_channel() #enable the channel (turn the green light for the channel)
+	supply.set_min_voltage(0) #set the minimum voltage available (min in 0)
+	supply.set_max_voltage(20) #set the maximum voltage available (max is 20.05)
+	#supply.set_min_current(0) #set the minimum current available (min in 0)
+	supply.set_max_current(3.01) #set the maximum current available (max is 6.01a bellow 6v and 3.01a from that point)
+	supply.set_current(3)
+
+	supply.set_channel(2)
+	supply.enable_channel()
+	supply.set_max_voltage(0)
+	supply.set_max_voltage(20) 
+	#supply.set_min_current(0)
+	supply.set_max_current(3.01)
+	supply.set_current(3)
+
+	step_volt = 1 #in v
+	start_volt = 0
+	stop_volt = 4
 
 	digit_temp1.configTemp(rjunc=26)
 	digit_temp2.configTemp(rjunc=26)
@@ -63,7 +89,11 @@ def main_app(shared_data):
 
 	res = {'Voltage':[], 'Current':[], 'Temp1':[], 'Temp2':[]}
 
-	for i in range(10):
+	for x in range(start_volt, stop_volt + step_volt, step_volt):
+		supply.set_channel(1)
+		supply.set_voltage(x/2)
+		supply.set_channel(2)
+		supply.set_voltage(x/2)
 		res['Voltage'].append(digit_voltage.measureVoltage())
 		res['Current'].append(digit_current.measureCurrent())
 		res['Temp1'].append(digit_temp1.getTemp())
