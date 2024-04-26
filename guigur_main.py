@@ -4,7 +4,7 @@ from queue import Queue
 import time
 
 from lib.KEYTHLEY2000 import KEYTHLEY2000
-from lib.PSU import PSU
+from lib.NGL202 import NGL202
 
 # from gui import gui
 
@@ -23,29 +23,38 @@ def main_app(shared_data):
 	# d.getTemp()
 	# print(d.measureVoltage())
 	# print(d.measureCurrent())
-	d = PSU(rm, 'ASRL/dev/cu.usbmodem21201::INSTR')
+	print(rm.list_resources())
+	d = NGL202(rm, 'ASRL/dev/cu.usbmodem21201::INSTR')
 	d.check(role="PSU", name="Rohde&Schwarz,NGL202,3638.3376k03/105048,04.000 002CBB20D8F", port="1")
-	d.set_channel(1)
-	d.set_max_voltage(0)
-	d.set_max_voltage(20)
-	d.enable_output()
-	time.sleep(1)
+
+	d.set_channel(1) #select the channel 1 to do the setup on this specific channel
+	d.enable_channel() #enable the channel (turn the green light for the channel)
+	d.set_max_voltage(0) #set the minimum voltage available (min in 0)
+	d.set_max_voltage(20) #set the maximum voltage available (max is 20.05)
 	
 	d.set_channel(2)
+	d.enable_channel()
 	d.set_max_voltage(0)
-	d.set_max_voltage(20)
-	d.enable_output()
 
 	step_volt = 1 #in v
 	start_volt = 0
 	stop_volt = 20
 
 	for x in range(start_volt, stop_volt + step_volt, step_volt):
+		d.disable_output()
+		time.sleep(0.1)
+	
 		d.set_channel(1)
 		d.set_voltage(x/2)
 		d.set_channel(2)
 		d.set_voltage(x/2)
+
+
+		time.sleep(0.1)
+		d.enable_output() #enable the outut (the blue light)
 		time.sleep(1)
+	
+	d.disable_output()
 
 if __name__ == "__main__":
 	shared_data = Queue()
