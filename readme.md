@@ -18,12 +18,12 @@ A supervisor has been written `Supervisor_v1_2.py` which will do the test sequen
 
 *Video: Demo - Python Supervisor v1.2*
 
-![Demo](./images/October-2024-Supervisor_v1_2.mp4 "Demo"){width=640 height=360px}
+![Demo](images/October-2024-Supervisor_v1_2.mp4 "Demo"){width=640 height=360px}
 
 Typical DC current measurement during sweep is:
 *Image : DC current at HV bus: power supply turn ON, DC bus ramp up (75 V), Phase shift sweep, DC bus ramp down, power supply turn OFF*
 
-<img src="./Images/Figure_2-75V-Sweep15to45step5.png" width="300">
+<img src="./images/Figure_2-75V-Sweep15to45step5.png" width="300">
 
 Previous functions such as `main.py` script creates all the objects of each instrument of the test bench and provides multiple code functions for later developing the appropriate algorithm.
 
