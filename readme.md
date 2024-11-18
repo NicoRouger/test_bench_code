@@ -17,8 +17,7 @@ A supervisor has been written `Supervisor_v1_2.py` which will do the test sequen
 
 
 *Video: Demo - Python Supervisor v1.2*
-https://github.com/user-attachments/assets/0cd5cf06-7bd1-42ec-848b-38305e3359d9
-
+<video src="https://github.com/user-attachments/assets/0cd5cf06-7bd1-42ec-848b-38305e3359d9" width="360" height="480" controls></video>
 
 Typical DC current measurement during sweep is:
 *Image : DC current at HV bus: power supply turn ON, DC bus ramp up (75 V), Phase shift sweep, DC bus ramp down, power supply turn OFF*
